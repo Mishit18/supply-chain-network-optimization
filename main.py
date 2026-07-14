@@ -7,6 +7,7 @@ import config
 from baselines import run_baselines
 from data_generation import generate_synthetic_data
 from model import diagnose_feasibility, solve_network
+from report import generate_project_report
 from sensitivity import run_sensitivity_suite
 from solve import run_optimal
 from visualize import create_all_plots
@@ -112,6 +113,7 @@ def main():
 
     _write_outputs(baseline_summary, sensitivity_outputs, metrics)
     plot_paths = create_all_plots(suppliers, warehouses, demand, optimal_result, baseline_summary, sensitivity_outputs)
+    report_path = generate_project_report()
 
     print("\nBaseline comparison:")
     print(baseline_summary[["method", "status", "total_cost", "optimal_cost_reduction_pct", "opened_count"]])
@@ -120,6 +122,7 @@ def main():
     print("\nPlots:")
     for path in plot_paths:
         print(f"- {path}")
+    print(f"\nProject report: {report_path}")
 
     _print_resume_bullets(metrics)
     print(f"\nCompleted in {time.perf_counter() - started:.1f} seconds.")

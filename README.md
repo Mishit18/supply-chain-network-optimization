@@ -1,27 +1,78 @@
 # Supply Chain Network Optimization
 
-This project builds a reproducible two-stage capacitated facility location and transportation MILP for a synthetic supply chain network. It decides which warehouses to open and how to route supplier flow through those warehouses to demand nodes while minimizing fixed opening cost plus variable transportation cost.
+Two-stage supply chain network design using a capacitated facility location MILP. The model decides which distribution centers to open and how to route supplier flow through open facilities to demand nodes while minimizing fixed opening cost plus variable transportation cost.
+
+## Results Snapshot
+
+| Metric | Value |
+|---|---:|
+| Network size | 5 suppliers, 10 candidate warehouses, 50 demand nodes |
+| MILP variables | 10 binary open/close variables, 2,500 continuous flow variables |
+| Optimal total cost | $1,917,967 |
+| Warehouses opened | W01, W02, W05, W06, W08 |
+| Cost reduction vs greedy nearest | 22.15% |
+| Cost reduction vs open-all network | 20.14% |
+| Cost reduction vs k-means heuristic | 7.90% |
+| Robust warehouses under demand shocks | W01, W08 |
+
+![Optimized supply chain network](docs/assets/network_map.png)
+
+## What This Project Covers
+
+- Synthetic but realistic supply chain data generation with reproducible random seeds.
+- Capacitated facility location and transportation formulation in PuLP.
+- CBC solver workflow with optional Gurobi hook.
+- Benchmarking against greedy nearest-warehouse, open-all, and k-means baselines.
+- Sensitivity analysis for demand shocks, fixed costs, capacity tightening, and service-level distance constraints.
+- Sustainability extension using carbon-price sweeps and cost/emissions tradeoff plots.
+- Safety-stock calculation for open warehouses using a normal newsvendor-style approximation.
+- Exported CSV results, plots, and a generated project report.
+
+## Repository Structure
+
+```text
+.
+├── baselines.py           # Greedy, open-all, and k-means benchmark methods
+├── config.py              # Reproducible parameters and experiment settings
+├── data_generation.py     # Synthetic suppliers, warehouses, demand, and arc costs
+├── main.py                # End-to-end pipeline runner
+├── model.py               # PuLP MILP formulation and solution extraction
+├── report.py              # Generates PROJECT_REPORT.md and GitHub chart assets
+├── sensitivity.py         # Robustness and extension experiments
+├── solve.py               # Optimal solve wrapper and CSV exports
+├── visualize.py           # Network and tradeoff plots
+├── tests/                 # Regression tests for data and model logic
+├── data/                  # Generated input CSVs after running main.py
+├── results/               # Generated solution and scenario CSVs
+└── plots/                 # Generated analysis charts
+```
 
 ## Quick Start
 
 ```bash
-cd supply_chain_network_optimization
 python -m pip install -r requirements.txt
 python main.py
 ```
 
+Run the tests:
+
+```bash
+pytest -q
+```
+
 Generated artifacts:
 
-- `data/`: reproducible synthetic CSV inputs.
-- `results/`: optimal solution, baseline comparisons, sensitivity tables, duals, resume metrics.
-- `plots/`: network map, cost breakdown, tornado chart, service tradeoff, emissions Pareto sweep.
+- `data/`: reproducible synthetic input CSVs.
+- `results/`: optimal solution, baseline comparisons, sensitivity tables, duals, and resume metrics.
+- `plots/`: network map, cost breakdown, tornado chart, service tradeoff, and emissions Pareto sweep.
+- `PROJECT_REPORT.md`: portfolio-style report with tables, charts, interpretation, and resume bullets.
 
 ## Mathematical Formulation
 
 Sets:
 
 - `I`: suppliers.
-- `J`: potential warehouse or DC locations.
+- `J`: potential warehouse or distribution-center locations.
 - `K`: demand nodes.
 
 Parameters:
@@ -54,66 +105,53 @@ x_ijk <= d_k y_j                                for every i, j, k
 x_ijk >= 0, y_j in {0,1}
 ```
 
-The implementation solves the capacitated facility location problem (CFLP). In an uncapacitated facility location problem (UFL), open facilities can serve unlimited demand, so facility capacity constraints are absent or non-binding. CFLP is more realistic for operations roles because capacity forces tradeoffs between fixed cost, geographic proximity, and service feasibility.
+The project implements the capacitated facility location problem (CFLP). Unlike an uncapacitated facility location model, CFLP limits flow through each open warehouse, making the network-design tradeoff closer to real operations planning.
+
+## Baseline Comparison
+
+![Cost breakdown by method](docs/assets/cost_breakdown.png)
+
+| Method | Total Cost | Cost Reduction from MILP |
+|---|---:|---:|
+| Greedy nearest warehouse | $2,463,745 | 22.15% |
+| Open all warehouses | $2,401,769 | 20.14% |
+| K-means heuristic | $2,082,458 | 7.90% |
+
+## Sensitivity and Robustness
+
+The model is re-solved under demand shocks of `-50%, -30%, -20%, +20%, +30%, +50%`. Warehouses W01 and W08 remain open across all demand scenarios, while W02, W03, W05, W06, and W10 are marginal and change with scenario pressure.
+
+![Sensitivity tornado chart](docs/assets/sensitivity_tornado.png)
+
+Service-level constraints require each demand node to be served within a maximum warehouse-to-demand distance. The tighter the maximum distance, the more expensive the network becomes.
+
+![Service-level cost tradeoff](docs/assets/service_cost_tradeoff.png)
+
+## Sustainability Extension
+
+The emissions extension adds carbon cost per km-unit shipped and re-solves the network for a range of carbon prices. This produces a planning view of the cost-versus-emissions tradeoff.
+
+![Cost emissions Pareto sweep](docs/assets/cost_emissions_pareto.png)
 
 ## Why MILP?
 
-This is not just a transportation problem because the model must choose facilities before routing flow. Binary variables make it a mixed-integer linear program. Facility location is NP-hard because it contains the fixed-charge location choice problem: selecting the best subset of warehouses among `2^|J|` possible open/closed combinations. Solvers such as CBC use branch-and-bound and cutting-plane methods to search this combinatorial space while solving LP relaxations at nodes.
+This is not only a transportation problem because facility-opening decisions are endogenous. The binary fixed-charge variables make the problem a mixed-integer linear program. Facility location is NP-hard because the solver must search over possible open/closed subsets of candidate warehouses.
 
-The LP relaxation can produce fractional `y_j` values because the model may prefer opening 0.37 of a warehouse to avoid paying a full fixed cost. Natural integrality is more likely in pure transportation or assignment models with totally unimodular constraint matrices and integral right-hand sides. The fixed-charge linking constraints break that structure.
+CBC solves the model through branch-and-bound over LP relaxations. LP relaxation can produce fractional warehouse openings because opening 0.4 of a warehouse may look cheap in the relaxation, even though real facilities must be opened or closed.
 
-## Baselines
+## Scaling Discussion
 
-The project compares the MILP optimum against:
+For networks with thousands of demand nodes, practical options include:
 
-- Greedy nearest warehouse: assign each demand node to its nearest potential warehouse, then solve the best supplier routing under that assignment.
-- Open all: open every candidate warehouse and optimize transportation.
-- K-means: cluster demand nodes, select warehouses nearest to cluster centers, then optimize routing through those warehouses.
+- Aggregating demand into zones before solving.
+- Pruning weak warehouse candidates using distance and capacity screens.
+- Using warm-start heuristics from k-means or greedy construction.
+- Applying decomposition methods such as Benders decomposition.
+- Solving with commercial solvers for large production-scale instances.
 
-The baseline costs are saved to `results/baseline_comparison.csv`.
+## Resume Bullets
 
-## Sensitivity Analyses
-
-Implemented experiments:
-
-- Demand shocks: `-50%, -30%, -20%, +20%, +30%, +50%`.
-- Fixed cost sweep: warehouse-by-warehouse open/closed threshold behavior.
-- Capacity tightening: reduce warehouse capacity by 20%.
-- Service-level constraints: force demand nodes to be served within `D = 200, 300, 400` distance units.
-- Shadow prices: demand-constraint dual values from the LP solve are exported for economic interpretation.
-- Emissions extension: solve a cost-plus-carbon-price sweep and plot a cost/emissions frontier.
-- Safety stock: compute open-warehouse safety stock using a normal approximation and service factor.
-
-## Interpreting Shadow Prices
-
-The dual value of a demand constraint approximates the marginal increase in objective cost from one extra unit of demand at that node in the LP relaxation. A high shadow price usually means the node is expensive to serve because it is far from open warehouses, close to constrained capacity, or both. For the MILP itself, duals are not directly meaningful at integer nodes, so the code exports duals from the solved relaxation/subproblem context.
-
-## Infeasibility Checklist
-
-If CBC reports infeasibility:
-
-- Check `sum supplier capacity >= sum demand`.
-- Check `sum warehouse capacity >= sum demand`.
-- Check service distance limits; a tight `D` can leave some demand nodes unreachable.
-- Check fixed-open baselines; selected warehouses may not have enough capacity.
-- Avoid huge big-M values. This project uses `x_ijk <= d_k y_j`, a tight link based on demand.
-
-## Common Mistakes
-
-- Missing the warehouse capacity-linking constraint, which allows flow through closed warehouses.
-- Using an oversized big-M and causing numerical instability.
-- Comparing MILP against an unrealistically weak baseline.
-- Forgetting supplier capacity, which turns the project into a location-only exercise.
-- Treating LP relaxation duals as exact MILP economics without qualification.
-
-## Interview Depth
-
-Strong answers should explain:
-
-- MILP is needed because warehouse opening decisions are binary fixed-charge decisions.
-- CBC solves by exploring a branch-and-bound tree of LP relaxations and pruning dominated nodes.
-- CFLP differs from a transportation problem because facility selection is endogenous.
-- Scaling to 10,000 demand nodes needs aggregation, decomposition, candidate pruning, heuristics, column generation, or commercial solvers.
-- Robustness matters because a single deterministic demand forecast can overfit the network design.
-
-After running `python main.py`, use `results/resume_metrics.json` to fill resume bullets with actual numbers from your generated experiment.
+- Formulated a 65-node two-stage capacitated facility location MILP with 10 binary open/close decisions and 2,500 continuous flow variables in PuLP.
+- Reduced total logistics cost by 22.15% versus greedy nearest-warehouse assignment and 20.14% versus an open-all baseline across 50 demand nodes.
+- Sensitivity-tested the network under +/-20%, +/-30%, and +/-50% demand shocks; identified 2 robust warehouse locations and 5 marginal locations.
+- Added max-distance service-level constraints and quantified cost-of-service tradeoffs across 3 feasible thresholds.

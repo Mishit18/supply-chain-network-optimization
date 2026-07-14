@@ -5,3 +5,4 @@ data/*.csv
 results/*.csv
 results/*.json
 plots/*.png
+!docs/assets/*.png
