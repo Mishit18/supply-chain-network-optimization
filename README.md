@@ -1,5 +1,7 @@
 # Supply Chain Network Optimization
 
+[![Tests](https://github.com/Mishit18/supply-chain-network-optimization/actions/workflows/tests.yml/badge.svg)](https://github.com/Mishit18/supply-chain-network-optimization/actions/workflows/tests.yml)
+
 Two-stage supply chain network design using a capacitated facility location MILP. The model decides which distribution centers to open and how to route supplier flow through open facilities to demand nodes while minimizing fixed opening cost plus variable transportation cost.
 
 ## Results Snapshot
@@ -26,25 +28,27 @@ Two-stage supply chain network design using a capacitated facility location MILP
 - Sensitivity analysis for demand shocks, fixed costs, capacity tightening, and service-level distance constraints.
 - Sustainability extension using carbon-price sweeps and cost/emissions tradeoff plots.
 - Safety-stock calculation for open warehouses using a normal newsvendor-style approximation.
-- Exported CSV results, plots, and a generated project report.
+- Exported CSV results, plots, generated report, optional dashboard, tests, and CI.
 
 ## Repository Structure
 
 ```text
 .
-├── baselines.py           # Greedy, open-all, and k-means benchmark methods
-├── config.py              # Reproducible parameters and experiment settings
-├── data_generation.py     # Synthetic suppliers, warehouses, demand, and arc costs
-├── main.py                # End-to-end pipeline runner
-├── model.py               # PuLP MILP formulation and solution extraction
-├── report.py              # Generates PROJECT_REPORT.md and GitHub chart assets
-├── sensitivity.py         # Robustness and extension experiments
-├── solve.py               # Optimal solve wrapper and CSV exports
-├── visualize.py           # Network and tradeoff plots
-├── tests/                 # Regression tests for data and model logic
-├── data/                  # Generated input CSVs after running main.py
-├── results/               # Generated solution and scenario CSVs
-└── plots/                 # Generated analysis charts
+|-- baselines.py           # Greedy, open-all, and k-means benchmark methods
+|-- config.py              # Reproducible parameters and experiment settings
+|-- dashboard.py           # Optional Streamlit dashboard
+|-- data_generation.py     # Synthetic suppliers, warehouses, demand, and arc costs
+|-- main.py                # End-to-end pipeline runner
+|-- model.py               # PuLP MILP formulation and solution extraction
+|-- report.py              # Generates PROJECT_REPORT.md and GitHub chart assets
+|-- sensitivity.py         # Robustness and extension experiments
+|-- validation.py          # Input validation checks
+|-- visualize.py           # Network and tradeoff plots
+|-- docs/                  # Interview, assumptions, and recruiter summaries
+|-- tests/                 # Regression tests for data and model logic
+|-- data/                  # Generated input CSVs after running main.py
+|-- results/               # Generated solution and scenario CSVs
+`-- plots/                 # Generated analysis charts
 ```
 
 ## Quick Start
@@ -57,7 +61,14 @@ python main.py
 Run the tests:
 
 ```bash
-pytest -q
+python -m pytest -q
+```
+
+Optional dashboard:
+
+```bash
+python -m pip install -r requirements-dashboard.txt
+streamlit run dashboard.py
 ```
 
 Generated artifacts:
@@ -66,6 +77,12 @@ Generated artifacts:
 - `results/`: optimal solution, baseline comparisons, sensitivity tables, duals, and resume metrics.
 - `plots/`: network map, cost breakdown, tornado chart, service tradeoff, and emissions Pareto sweep.
 - `PROJECT_REPORT.md`: portfolio-style report with tables, charts, interpretation, and resume bullets.
+
+Additional docs:
+
+- `docs/INTERVIEW_GUIDE.md`: concise answers for common project interview questions.
+- `docs/MODEL_ASSUMPTIONS.md`: assumptions, simplifications, and limitations.
+- `docs/RECRUITER_SUMMARY.md`: short resume-oriented project summary.
 
 ## Mathematical Formulation
 

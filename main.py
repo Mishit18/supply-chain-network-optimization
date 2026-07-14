@@ -10,6 +10,7 @@ from model import diagnose_feasibility, solve_network
 from report import generate_project_report
 from sensitivity import run_sensitivity_suite
 from solve import run_optimal
+from validation import raise_for_invalid_inputs
 from visualize import create_all_plots
 
 
@@ -86,6 +87,7 @@ def _print_resume_bullets(metrics):
 def main():
     started = time.perf_counter()
     suppliers, warehouses, demand, arcs_sw, arcs_wd = generate_synthetic_data(save=True)
+    raise_for_invalid_inputs(suppliers, warehouses, demand, arcs_sw, arcs_wd)
 
     feasibility = diagnose_feasibility(suppliers, warehouses, demand)
     print("Feasibility check:", feasibility)
