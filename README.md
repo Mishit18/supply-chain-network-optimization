@@ -10,12 +10,12 @@ Two-stage supply chain network design using a capacitated facility location MILP
 |---|---:|
 | Network size | 5 suppliers, 10 candidate warehouses, 50 demand nodes |
 | MILP variables | 10 binary open/close variables, 2,500 continuous flow variables |
-| Optimal total cost | $1,917,967 |
+| Optimal total cost | $2,235,627 |
 | Warehouses opened | W01, W02, W05, W06, W08 |
-| Cost reduction vs greedy nearest | 22.15% |
-| Cost reduction vs open-all network | 20.14% |
-| Cost reduction vs k-means heuristic | 7.90% |
-| Robust warehouses under demand shocks | W01, W08 |
+| Cost reduction vs greedy nearest | 20.60% |
+| Cost reduction vs open-all network | 19.00% |
+| Cost reduction vs k-means heuristic | 14.34% |
+| Robust warehouses under demand shocks | W01, W05, W06, W08 |
 
 ![Optimized supply chain network](docs/assets/network_map.png)
 
@@ -29,6 +29,8 @@ Two-stage supply chain network design using a capacitated facility location MILP
 - Sustainability extension using carbon-price sweeps and cost/emissions tradeoff plots.
 - Safety-stock calculation for open warehouses using a normal newsvendor-style approximation.
 - Three-period facility-location extension with demand growth and warehouse switching costs.
+- Scalable demand-zone aggregation demo for larger customer maps.
+- Node-level Monte Carlo demand uncertainty with warehouse stability metrics.
 - Interactive Streamlit dashboard that can re-solve custom demand, capacity, cost, service, and carbon scenarios.
 - Exported CSV results, plots, generated report, optional dashboard, tests, and CI.
 
@@ -66,6 +68,8 @@ Useful run modes:
 python main.py --quick
 python main.py --deep
 python main.py --multi-period
+python main.py --scale-demo
+python main.py --monte-carlo
 python main.py --solver-msg
 ```
 
@@ -108,6 +112,22 @@ python main.py --multi-period
 ```
 
 This solves a three-period version of the facility-location problem with demand growth, warehouse opening switching costs, and warehouse closing switching costs. Outputs are written to `results/multi_period_summary.csv` and `results/multi_period_transitions.csv`.
+
+Run the scale demo:
+
+```bash
+python main.py --scale-demo
+```
+
+This creates a larger synthetic customer cloud, aggregates customer points into demand zones, solves the zone-level MILP, and writes `results/scale_demo_summary.csv`.
+
+Run node-level Monte Carlo demand uncertainty:
+
+```bash
+python main.py --monte-carlo
+```
+
+This perturbs demand independently by node, re-solves the network, and writes warehouse-opening stability tables.
 
 ## Mathematical Formulation
 
@@ -155,13 +175,13 @@ The project implements the capacitated facility location problem (CFLP). Unlike 
 
 | Method | Total Cost | Cost Reduction from MILP |
 |---|---:|---:|
-| Greedy nearest warehouse | $2,463,745 | 22.15% |
-| Open all warehouses | $2,401,769 | 20.14% |
-| K-means heuristic | $2,082,458 | 7.90% |
+| Greedy nearest warehouse | $2,815,727 | 20.60% |
+| Open all warehouses | $2,759,999 | 19.00% |
+| K-means heuristic | $2,609,845 | 14.34% |
 
 ## Sensitivity and Robustness
 
-The model is re-solved under demand shocks of `-50%, -30%, -20%, +20%, +30%, +50%`. Warehouses W01 and W08 remain open across all demand scenarios, while W02, W03, W05, W06, and W10 are marginal and change with scenario pressure.
+The model is re-solved under demand shocks of `-50%, -30%, -20%, +20%, +30%, +50%`. Warehouses W01, W05, W06, and W08 remain open across all demand scenarios, while W02 and W10 are marginal and change with scenario pressure.
 
 ![Sensitivity tornado chart](docs/assets/sensitivity_tornado.png)
 
@@ -185,7 +205,7 @@ CBC solves the model through branch-and-bound over LP relaxations. LP relaxation
 
 For networks with thousands of demand nodes, practical options include:
 
-- Aggregating demand into zones before solving.
+- Aggregating demand into zones before solving. This repository includes a coded scale demo for that workflow.
 - Pruning weak warehouse candidates using distance and capacity screens.
 - Using warm-start heuristics from k-means or greedy construction.
 - Applying decomposition methods such as Benders decomposition.
@@ -194,6 +214,6 @@ For networks with thousands of demand nodes, practical options include:
 ## Resume Bullets
 
 - Formulated a 65-node two-stage capacitated facility location MILP with 10 binary open/close decisions and 2,500 continuous flow variables in PuLP.
-- Reduced total logistics cost by 22.15% versus greedy nearest-warehouse assignment and 20.14% versus an open-all baseline across 50 demand nodes.
-- Sensitivity-tested the network under +/-20%, +/-30%, and +/-50% demand shocks; identified 2 robust warehouse locations and 5 marginal locations.
-- Added max-distance service-level constraints and quantified cost-of-service tradeoffs across 3 feasible thresholds.
+- Reduced total logistics cost by 20.60% versus greedy nearest-warehouse assignment and 19.00% versus an open-all baseline across 50 demand nodes.
+- Sensitivity-tested the network under +/-20%, +/-30%, and +/-50% demand shocks; identified 4 robust warehouse locations and 2 marginal locations.
+- Added max-distance service-level constraints and quantified cost-of-service tradeoffs across 2 feasible thresholds.

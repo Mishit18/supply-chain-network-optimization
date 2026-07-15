@@ -79,6 +79,9 @@ def generate_project_report():
     capacity = _read_csv_or_empty(config.RESULTS_DIR / "capacity.csv")
     multi_period_path = config.RESULTS_DIR / "multi_period_summary.csv"
     multi_period = pd.read_csv(multi_period_path) if multi_period_path.exists() else pd.DataFrame()
+    scale_demo = _read_csv_or_empty(config.RESULTS_DIR / "scale_demo_summary.csv")
+    monte_carlo = _read_csv_or_empty(config.RESULTS_DIR / "monte_carlo_demand_scenarios.csv")
+    monte_carlo_stability = _read_csv_or_empty(config.RESULTS_DIR / "monte_carlo_warehouse_stability.csv")
     assets = _copy_plot_assets()
 
     baseline_view = baseline.assign(
@@ -95,6 +98,13 @@ def generate_project_report():
         total_cost=capacity["total_cost"].map(lambda x: _money(x) if pd.notna(x) else "Infeasible"),
         cost_increase_pct=capacity["cost_increase_pct"].map(lambda x: _pct(x) if pd.notna(x) else "N/A"),
     ) if not capacity.empty else pd.DataFrame(columns=["scenario", "status", "total_cost", "cost_increase_pct", "opened_warehouses"])
+    monte_carlo_view = monte_carlo.assign(
+        total_demand=monte_carlo["total_demand"].map(lambda x: f"{x:,.0f}"),
+        total_cost=monte_carlo["total_cost"].map(lambda x: _money(x) if pd.notna(x) else "Infeasible"),
+    ) if not monte_carlo.empty else pd.DataFrame(columns=["scenario_id", "status", "total_demand", "total_cost", "opened_count", "opened_warehouses"])
+    monte_carlo_stability_view = monte_carlo_stability.assign(
+        open_frequency=monte_carlo_stability["open_frequency"].map(lambda x: _pct(100 * x)),
+    ) if not monte_carlo_stability.empty else pd.DataFrame(columns=["warehouse_id", "open_frequency", "open_count", "scenario_count"])
 
     service_tradeoff = metrics.get("service_tradeoff_cost_increase_pct") or {}
     service_sentence = ", ".join(
@@ -162,6 +172,20 @@ The emissions extension adds a carbon-price penalty to each km-unit shipped. Thi
 The repository includes a three-period extension with demand growth and warehouse switching costs. Run `python main.py --multi-period` to solve it and export `results/multi_period_summary.csv` and `results/multi_period_transitions.csv`.
 
 {_markdown_table(multi_period, ["period", "demand_growth", "opened_count", "opened_warehouses", "total_flow"]) if not multi_period.empty else "Multi-period results have not been generated in the latest run."}
+
+## Scaling Demonstration
+
+The scale demo generates a larger synthetic customer cloud, aggregates customers into demand zones, and solves the zone-level MILP. Run `python main.py --scale-demo` to refresh this table.
+
+{_markdown_table(scale_demo, ["raw_customer_nodes", "aggregated_zones", "status", "opened_count", "variables", "constraints", "solve_seconds"]) if not scale_demo.empty else "Scale-demo results have not been generated in the latest run."}
+
+## Monte Carlo Demand Uncertainty
+
+The Monte Carlo extension perturbs demand independently at each node, re-solves the MILP, and measures warehouse-opening stability. Run `python main.py --monte-carlo` to refresh these tables.
+
+{_markdown_table(monte_carlo_view, ["scenario_id", "status", "total_demand", "total_cost", "opened_count", "opened_warehouses"]) if not monte_carlo_view.empty else "Monte Carlo demand results have not been generated in the latest run."}
+
+{_markdown_table(monte_carlo_stability_view.head(10), ["warehouse_id", "open_frequency", "open_count", "scenario_count"]) if not monte_carlo_stability_view.empty else ""}
 
 ## Capacity Stress Test
 

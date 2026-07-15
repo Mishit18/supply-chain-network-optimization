@@ -8,6 +8,12 @@ def euclidean_distance(a_x, a_y, b_x, b_y):
     return float(np.hypot(a_x - b_x, a_y - b_y))
 
 
+def road_adjusted_distance(a_x, a_y, b_x, b_y, circuity=1.18):
+    euclidean = euclidean_distance(a_x, a_y, b_x, b_y)
+    manhattan = abs(a_x - b_x) + abs(a_y - b_y)
+    return float(circuity * (0.75 * euclidean + 0.25 * manhattan))
+
+
 def _node_ids(prefix, n):
     return [f"{prefix}{idx:02d}" for idx in range(1, n + 1)]
 
@@ -89,12 +95,20 @@ def generate_synthetic_data(seed=config.RANDOM_SEED, save=True):
     supplier_to_warehouse = []
     for _, s in suppliers.iterrows():
         for _, w in warehouses.iterrows():
-            distance = euclidean_distance(s.x, s.y, w.x, w.y)
+            euclidean = euclidean_distance(s.x, s.y, w.x, w.y)
+            distance = road_adjusted_distance(
+                s.x,
+                s.y,
+                w.x,
+                w.y,
+                rng.uniform(config.ROAD_CIRCUITY_LOW, config.ROAD_CIRCUITY_HIGH),
+            )
             weight = rng.uniform(config.WEIGHT_FACTOR_LOW, config.WEIGHT_FACTOR_HIGH)
             supplier_to_warehouse.append(
                 {
                     "supplier_id": s.supplier_id,
                     "warehouse_id": w.warehouse_id,
+                    "euclidean_distance": round(euclidean, 2),
                     "distance": round(distance, 2),
                     "unit_cost": round(distance * config.SUPPLIER_UNIT_COST_PER_KM * weight, 2),
                     "emission_kg_per_unit": round(distance * config.EMISSION_KG_PER_KM_UNIT, 4),
@@ -104,12 +118,20 @@ def generate_synthetic_data(seed=config.RANDOM_SEED, save=True):
     warehouse_to_demand = []
     for _, w in warehouses.iterrows():
         for _, d in demand.iterrows():
-            distance = euclidean_distance(w.x, w.y, d.x, d.y)
+            euclidean = euclidean_distance(w.x, w.y, d.x, d.y)
+            distance = road_adjusted_distance(
+                w.x,
+                w.y,
+                d.x,
+                d.y,
+                rng.uniform(config.ROAD_CIRCUITY_LOW, config.ROAD_CIRCUITY_HIGH),
+            )
             weight = rng.uniform(config.WEIGHT_FACTOR_LOW, config.WEIGHT_FACTOR_HIGH)
             warehouse_to_demand.append(
                 {
                     "warehouse_id": w.warehouse_id,
                     "demand_id": d.demand_id,
+                    "euclidean_distance": round(euclidean, 2),
                     "distance": round(distance, 2),
                     "unit_cost": round(distance * config.LAST_MILE_UNIT_COST_PER_KM * weight, 2),
                     "emission_kg_per_unit": round(distance * config.EMISSION_KG_PER_KM_UNIT, 4),

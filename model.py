@@ -42,6 +42,7 @@ def solve_network(
     fixed_open=None,
     assigned_warehouse_by_demand=None,
     demand_multiplier=1.0,
+    demand_override=None,
     capacity_multiplier=1.0,
     fixed_cost_multiplier=1.0,
     service_distance_limit=None,
@@ -56,6 +57,9 @@ def solve_network(
         row.demand_id: float(row.demand) * demand_multiplier
         for row in demand.itertuples(index=False)
     }
+    if demand_override is not None:
+        demand_override = dict(demand_override)
+        demand_map = {k: float(demand_override[k]) for k in demand_ids}
     supplier_capacity = {
         row.supplier_id: float(row.capacity)
         for row in suppliers.itertuples(index=False)

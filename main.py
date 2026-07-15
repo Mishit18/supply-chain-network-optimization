@@ -10,13 +10,22 @@ from data_generation import generate_synthetic_data
 from model import diagnose_feasibility, solve_network
 from multi_period import solve_multi_period_network
 from report import generate_project_report
+from scaling import run_scale_demo
 from sensitivity import run_sensitivity_suite
+from stochastic import run_monte_carlo_demand_analysis
 from solve import run_optimal
 from validation import raise_for_invalid_inputs
 from visualize import create_all_plots
 
 
-def _write_outputs(baseline_summary, sensitivity_outputs, resume_metrics, multi_period_result=None):
+def _write_outputs(
+    baseline_summary,
+    sensitivity_outputs,
+    resume_metrics,
+    multi_period_result=None,
+    scale_summary=None,
+    monte_carlo_outputs=None,
+):
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     baseline_summary.to_csv(config.RESULTS_DIR / "baseline_comparison.csv", index=False)
     for name, value in sensitivity_outputs.items():
@@ -27,6 +36,12 @@ def _write_outputs(baseline_summary, sensitivity_outputs, resume_metrics, multi_
     if multi_period_result is not None:
         multi_period_result.period_summary.to_csv(config.RESULTS_DIR / "multi_period_summary.csv", index=False)
         multi_period_result.transition_summary.to_csv(config.RESULTS_DIR / "multi_period_transitions.csv", index=False)
+    if scale_summary is not None:
+        scale_summary.to_csv(config.RESULTS_DIR / "scale_demo_summary.csv", index=False)
+    if monte_carlo_outputs is not None:
+        scenario_summary, stability = monte_carlo_outputs
+        scenario_summary.to_csv(config.RESULTS_DIR / "monte_carlo_demand_scenarios.csv", index=False)
+        stability.to_csv(config.RESULTS_DIR / "monte_carlo_warehouse_stability.csv", index=False)
 
 
 def _resume_metrics(optimal_result, baseline_summary, sensitivity_outputs, demand, multi_period_result=None):
@@ -103,6 +118,8 @@ def parse_args():
     parser.add_argument("--quick", action="store_true", help="Run only data generation, base MILP, LP relaxation, and report refresh.")
     parser.add_argument("--deep", action="store_true", help="Include slower fixed-cost threshold sweeps in sensitivity outputs.")
     parser.add_argument("--multi-period", action="store_true", help="Run the three-period facility-location extension with switching costs.")
+    parser.add_argument("--scale-demo", action="store_true", help="Aggregate a 1,000-customer demand cloud into zones and solve the scaled instance.")
+    parser.add_argument("--monte-carlo", action="store_true", help="Run node-level Monte Carlo demand uncertainty scenarios.")
     parser.add_argument("--solver-msg", action="store_true", help="Show CBC solver logs.")
     return parser.parse_args()
 
@@ -161,6 +178,29 @@ def main():
         if multi_period_result.objective:
             print(f"Multi-period objective: {multi_period_result.objective:,.2f}")
 
+    scale_summary = None
+    if args.scale_demo:
+        scale_summary, _, _ = run_scale_demo(suppliers, warehouses, arcs_sw)
+        row = scale_summary.iloc[0]
+        print(
+            f"Scale demo status: {row.status}; "
+            f"{row.raw_customer_nodes} customers -> {row.aggregated_zones} zones; "
+            f"{row.solve_seconds}s"
+        )
+
+    monte_carlo_outputs = None
+    if args.monte_carlo:
+        monte_carlo_outputs = run_monte_carlo_demand_analysis(suppliers, warehouses, demand, arcs_sw, arcs_wd)
+        scenario_summary, stability = monte_carlo_outputs
+        feasible = scenario_summary[scenario_summary["status"].isin(["Optimal", "Feasible"])]
+        avg_cost = feasible["total_cost"].mean() if not feasible.empty else None
+        avg_cost_text = f"{avg_cost:,.2f}" if avg_cost else "N/A"
+        print(
+            f"Monte Carlo scenarios: {scenario_summary.shape[0]}; "
+            f"feasible: {feasible.shape[0]}; "
+            f"average cost: {avg_cost_text}"
+        )
+
     metrics = _resume_metrics(optimal_result, baseline_summary, sensitivity_outputs, demand, multi_period_result)
 
     report_path = None
@@ -168,8 +208,21 @@ def main():
         if multi_period_result is not None:
             multi_period_result.period_summary.to_csv(config.RESULTS_DIR / "multi_period_summary.csv", index=False)
             multi_period_result.transition_summary.to_csv(config.RESULTS_DIR / "multi_period_transitions.csv", index=False)
+        if scale_summary is not None:
+            scale_summary.to_csv(config.RESULTS_DIR / "scale_demo_summary.csv", index=False)
+        if monte_carlo_outputs is not None:
+            scenario_summary, stability = monte_carlo_outputs
+            scenario_summary.to_csv(config.RESULTS_DIR / "monte_carlo_demand_scenarios.csv", index=False)
+            stability.to_csv(config.RESULTS_DIR / "monte_carlo_warehouse_stability.csv", index=False)
     else:
-        _write_outputs(baseline_summary, sensitivity_outputs, metrics, multi_period_result)
+        _write_outputs(
+            baseline_summary,
+            sensitivity_outputs,
+            metrics,
+            multi_period_result,
+            scale_summary,
+            monte_carlo_outputs,
+        )
         report_path = generate_project_report()
 
     if not baseline_summary.empty:

@@ -3,7 +3,7 @@
 ## Network Design
 
 - Suppliers, candidate warehouses, and demand nodes are placed on a 1000 x 1000 synthetic coordinate grid.
-- Supplier-to-warehouse and warehouse-to-demand costs are proportional to Euclidean distance with route-specific weight factors.
+- Supplier-to-warehouse and warehouse-to-demand costs use a road-adjusted distance approximation based on Euclidean distance, Manhattan distance, and route-specific circuity factors.
 - Warehouse opening costs vary by tier: small, medium, and large.
 - Warehouse capacities vary by tier and are generated with enough aggregate capacity to test demand expansion scenarios.
 
@@ -34,10 +34,11 @@
 - Emissions are modeled as kg CO2e per km-unit and converted to cost through a carbon price.
 - Safety stock is computed after network optimization using a normal approximation.
 - Fixed-cost threshold sweeps are available through the deeper experiment mode.
+- The scale demo aggregates many customer points into demand zones before solving, which approximates a common production planning workflow.
 
 ## Limitations
 
-- Travel distance is Euclidean, not road-network distance.
+- Travel distance is road-adjusted synthetic distance, not a real GIS road-network distance.
 - The model does not include stochastic programming recourse decisions.
 - Inventory holding, labor, and lease duration are simplified.
 - Supplier lead times and product-level SKUs are not explicitly modeled.

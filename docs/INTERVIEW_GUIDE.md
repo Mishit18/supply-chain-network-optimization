@@ -36,12 +36,13 @@ In the LP relaxation, the demand dual approximates the marginal cost of serving 
 
 ### How would this scale to 10,000 demand nodes?
 
-I would aggregate demand into zones, prune weak candidate warehouses, warm-start with heuristics, and consider decomposition methods such as Benders decomposition. For production use, I would also evaluate a commercial solver.
+I would aggregate demand into zones, prune weak candidate warehouses, warm-start with heuristics, and consider decomposition methods such as Benders decomposition. The repository includes a coded scale demo that aggregates a larger customer cloud into demand zones before solving. For production use, I would also evaluate a commercial solver.
 
 ## Strong Talking Points
 
 - The baseline comparison matters because an optimization result without a benchmark has weak business meaning.
 - Robust warehouses are better candidates for long-term investment because they stay open across demand shocks.
+- Monte Carlo node-level demand scenarios are stronger than only global demand multipliers because they test spatial demand redistribution.
 - Marginal warehouses are useful managerial signals: they are sensitive to demand contraction, expansion, or fixed-cost assumptions.
 - Service-level constraints create a direct cost-of-service curve, useful for negotiation between operations and customer-experience teams.
 
