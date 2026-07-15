@@ -15,6 +15,8 @@ class OptimizationResult:
     warehouse_decisions: dict[str, float]
     flows: list[dict]
     demand_duals: dict[str, float]
+    variable_count: int
+    constraint_count: int
     model: pulp.LpProblem
 
 
@@ -127,7 +129,7 @@ def solve_network(
     status = pulp.LpStatus[status_code]
 
     if status not in {"Optimal", "Feasible"}:
-        return OptimizationResult(status, None, None, None, [], {}, [], {}, problem)
+        return OptimizationResult(status, None, None, None, [], {}, [], {}, len(problem.variables()), len(problem.constraints), problem)
 
     y_values = {j: float(pulp.value(y[j])) for j in warehouse_ids}
     opened = [j for j, value in y_values.items() if value > 0.5]
@@ -168,6 +170,8 @@ def solve_network(
         warehouse_decisions=y_values,
         flows=flow_records,
         demand_duals=demand_duals,
+        variable_count=len(problem.variables()),
+        constraint_count=len(problem.constraints),
         model=problem,
     )
 

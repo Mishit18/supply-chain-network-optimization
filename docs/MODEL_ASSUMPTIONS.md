@@ -16,6 +16,7 @@
 ## Optimization
 
 - The base model is a single-period deterministic MILP.
+- The optional multi-period model adds demand growth and switching costs, but still uses deterministic period-level demand.
 - Flows are continuous, representing aggregate shipment volume rather than individual orders.
 - Warehouses have fixed opening costs and capacity limits.
 - Supplier capacities are enforced.
@@ -32,6 +33,7 @@
 - Service-level constraints restrict maximum warehouse-to-demand distance.
 - Emissions are modeled as kg CO2e per km-unit and converted to cost through a carbon price.
 - Safety stock is computed after network optimization using a normal approximation.
+- Fixed-cost threshold sweeps are available through the deeper experiment mode.
 
 ## Limitations
 

@@ -10,6 +10,8 @@ except ImportError as exc:
     ) from exc
 
 import config
+from data_generation import load_data
+from model import solve_network
 
 
 st.set_page_config(page_title="Supply Chain Network Optimization", layout="wide")
@@ -105,3 +107,42 @@ with st.expander("Service and capacity tables"):
     if not capacity.empty:
         st.write("Capacity stress test")
         st.dataframe(capacity, use_container_width=True, hide_index=True)
+
+st.divider()
+st.subheader("Interactive Re-Optimization")
+st.caption("Adjust scenario assumptions and re-solve the MILP with CBC.")
+
+scenario_cols = st.columns(5)
+demand_multiplier = scenario_cols[0].slider("Demand multiplier", 0.5, 1.5, 1.0, 0.05)
+capacity_multiplier = scenario_cols[1].slider("Warehouse capacity", 0.7, 1.3, 1.0, 0.05)
+fixed_cost_multiplier = scenario_cols[2].slider("Fixed cost", 0.5, 2.0, 1.0, 0.1)
+service_limit = scenario_cols[3].selectbox("Max service distance", ["None", 200, 300, 400])
+carbon_price = scenario_cols[4].slider("Carbon price", 0, 200, 0, 10)
+
+if st.button("Solve Scenario", type="primary"):
+    suppliers, warehouses, demand, arcs_sw, arcs_wd = load_data()
+    limit = None if service_limit == "None" else int(service_limit)
+    with st.spinner("Solving scenario..."):
+        scenario_result = solve_network(
+            suppliers,
+            warehouses,
+            demand,
+            arcs_sw,
+            arcs_wd,
+            demand_multiplier=demand_multiplier,
+            capacity_multiplier=capacity_multiplier,
+            fixed_cost_multiplier=fixed_cost_multiplier,
+            service_distance_limit=limit,
+            emission_price=carbon_price,
+            time_limit=60,
+        )
+
+    if scenario_result.objective is None:
+        st.error(f"Scenario status: {scenario_result.status}")
+    else:
+        scen_cols = st.columns(4)
+        scen_cols[0].metric("Scenario Cost", _money(scenario_result.objective))
+        scen_cols[1].metric("Opened Warehouses", len(scenario_result.opened_warehouses))
+        scen_cols[2].metric("Variables", scenario_result.variable_count)
+        scen_cols[3].metric("Constraints", scenario_result.constraint_count)
+        st.write("Opened warehouses:", ", ".join(scenario_result.opened_warehouses))

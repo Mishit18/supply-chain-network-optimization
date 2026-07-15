@@ -171,9 +171,13 @@ def safety_stock_by_open_warehouse(demand, flows):
     return warehouse_demand
 
 
-def run_sensitivity_suite(suppliers, warehouses, demand, arcs_sw, arcs_wd, optimal_result):
+def run_sensitivity_suite(suppliers, warehouses, demand, arcs_sw, arcs_wd, optimal_result, include_fixed_sweep=False):
     demand_df, robust, marginal = demand_shock_analysis(suppliers, warehouses, demand, arcs_sw, arcs_wd)
-    fixed_sweep_df, fixed_threshold_df = fixed_cost_sweep(suppliers, warehouses, demand, arcs_sw, arcs_wd)
+    if include_fixed_sweep:
+        fixed_sweep_df, fixed_threshold_df = fixed_cost_sweep(suppliers, warehouses, demand, arcs_sw, arcs_wd)
+    else:
+        fixed_sweep_df = pd.DataFrame()
+        fixed_threshold_df = pd.DataFrame()
     capacity_df = capacity_sensitivity(suppliers, warehouses, demand, arcs_sw, arcs_wd, optimal_result.objective)
     service_df = service_level_sweep(suppliers, warehouses, demand, arcs_sw, arcs_wd)
     emissions_df = pareto_emissions(suppliers, warehouses, demand, arcs_sw, arcs_wd)

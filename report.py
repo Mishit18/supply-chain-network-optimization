@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 import pandas as pd
+from pandas.errors import EmptyDataError
 
 import config
 
@@ -38,6 +39,15 @@ def _copy_plot_assets():
     return copied
 
 
+def _read_csv_or_empty(path):
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path)
+    except EmptyDataError:
+        return pd.DataFrame()
+
+
 def _markdown_table(df, columns):
     table = df[columns].copy()
     rows = [[str(value) for value in row] for row in table.to_numpy()]
@@ -63,26 +73,28 @@ def generate_project_report():
     with open(metrics_path, "r", encoding="utf-8") as f:
         metrics = json.load(f)
 
-    baseline = pd.read_csv(config.RESULTS_DIR / "baseline_comparison.csv")
-    demand_shocks = pd.read_csv(config.RESULTS_DIR / "demand_shocks.csv")
-    service_level = pd.read_csv(config.RESULTS_DIR / "service_level.csv")
-    capacity = pd.read_csv(config.RESULTS_DIR / "capacity.csv")
+    baseline = _read_csv_or_empty(config.RESULTS_DIR / "baseline_comparison.csv")
+    demand_shocks = _read_csv_or_empty(config.RESULTS_DIR / "demand_shocks.csv")
+    service_level = _read_csv_or_empty(config.RESULTS_DIR / "service_level.csv")
+    capacity = _read_csv_or_empty(config.RESULTS_DIR / "capacity.csv")
+    multi_period_path = config.RESULTS_DIR / "multi_period_summary.csv"
+    multi_period = pd.read_csv(multi_period_path) if multi_period_path.exists() else pd.DataFrame()
     assets = _copy_plot_assets()
 
     baseline_view = baseline.assign(
         total_cost=baseline["total_cost"].map(_money),
         optimal_cost_reduction_pct=baseline["optimal_cost_reduction_pct"].map(_pct),
-    )
+    ) if not baseline.empty else pd.DataFrame(columns=["method", "status", "total_cost", "opened_count", "optimal_cost_reduction_pct"])
     demand_view = demand_shocks.assign(
         total_cost=demand_shocks["total_cost"].map(lambda x: _money(x) if pd.notna(x) else "Infeasible")
-    )
+    ) if not demand_shocks.empty else pd.DataFrame(columns=["scenario", "status", "total_cost", "opened_warehouses"])
     service_view = service_level.assign(
         total_cost=service_level["total_cost"].map(lambda x: _money(x) if pd.notna(x) else "Infeasible")
-    )
+    ) if not service_level.empty else pd.DataFrame(columns=["max_distance", "status", "total_cost", "opened_warehouses"])
     capacity_view = capacity.assign(
         total_cost=capacity["total_cost"].map(lambda x: _money(x) if pd.notna(x) else "Infeasible"),
         cost_increase_pct=capacity["cost_increase_pct"].map(lambda x: _pct(x) if pd.notna(x) else "N/A"),
-    )
+    ) if not capacity.empty else pd.DataFrame(columns=["scenario", "status", "total_cost", "cost_increase_pct", "opened_warehouses"])
 
     service_tradeoff = metrics.get("service_tradeoff_cost_increase_pct") or {}
     service_sentence = ", ".join(
@@ -111,6 +123,8 @@ The optimized network opens {len(metrics["opened_warehouses"])} warehouses ({", 
 | Demand nodes | {metrics["demand_nodes"]} |
 | Binary variables | {metrics["binary_variables"]} |
 | Continuous flow variables | {metrics["continuous_flow_variables"]} |
+| Solver variables | {metrics.get("model_variables", "N/A")} |
+| Solver constraints | {metrics.get("model_constraints", "N/A")} |
 | Optimal fixed cost | {_money(metrics["optimal_fixed_cost"])} |
 | Optimal variable cost | {_money(metrics["optimal_variable_cost"])} |
 | Optimal total cost | {_money(metrics["optimal_total_cost"])} |
@@ -142,6 +156,12 @@ The service-level extension constrains each demand node to be served within a ma
 The emissions extension adds a carbon-price penalty to each km-unit shipped. This creates a cost-versus-emissions sweep that can be used as a Pareto-style planning discussion for sustainability-aware network design.
 
 ![Cost emissions Pareto sweep]({assets.get("cost_emissions_pareto.png", "plots/cost_emissions_pareto.png")})
+
+## Multi-Period Extension
+
+The repository includes a three-period extension with demand growth and warehouse switching costs. Run `python main.py --multi-period` to solve it and export `results/multi_period_summary.csv` and `results/multi_period_transitions.csv`.
+
+{_markdown_table(multi_period, ["period", "demand_growth", "opened_count", "opened_warehouses", "total_flow"]) if not multi_period.empty else "Multi-period results have not been generated in the latest run."}
 
 ## Capacity Stress Test
 

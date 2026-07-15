@@ -30,6 +30,8 @@ The optimized network reduced total logistics cost by 22.15% versus a greedy nea
 - Service-level tradeoffs
 - Sustainability-aware planning
 - Safety-stock approximation
+- Multi-period network planning
+- Interactive scenario re-optimization
 
 ## Best Resume Bullets
 

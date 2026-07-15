@@ -19,6 +19,8 @@ The optimized network opens 5 warehouses (W01, W02, W05, W06, W08) at a total lo
 | Demand nodes | 50 |
 | Binary variables | 10 |
 | Continuous flow variables | 2500 |
+| Solver variables | 2510 |
+| Solver constraints | 2565 |
 | Optimal fixed cost | $545,982 |
 | Optimal variable cost | $1,371,985 |
 | Optimal total cost | $1,917,967 |
@@ -65,6 +67,16 @@ The service-level extension constrains each demand node to be served within a ma
 The emissions extension adds a carbon-price penalty to each km-unit shipped. This creates a cost-versus-emissions sweep that can be used as a Pareto-style planning discussion for sustainability-aware network design.
 
 ![Cost emissions Pareto sweep](docs/assets/cost_emissions_pareto.png)
+
+## Multi-Period Extension
+
+The repository includes a three-period extension with demand growth and warehouse switching costs. Run `python main.py --multi-period` to solve it and export `results/multi_period_summary.csv` and `results/multi_period_transitions.csv`.
+
+| period | demand_growth | opened_count | opened_warehouses       | total_flow        |
+| ------ | ------------- | ------------ | ----------------------- | ----------------- |
+| 1      | 1.0           | 5            | W01,W02,W05,W06,W08     | 5038.0            |
+| 2      | 1.12          | 5            | W01,W02,W05,W06,W08     | 5642.560000000001 |
+| 3      | 1.25          | 6            | W01,W02,W03,W06,W08,W10 | 6297.5            |
 
 ## Capacity Stress Test
 

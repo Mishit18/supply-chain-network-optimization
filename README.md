@@ -28,6 +28,8 @@ Two-stage supply chain network design using a capacitated facility location MILP
 - Sensitivity analysis for demand shocks, fixed costs, capacity tightening, and service-level distance constraints.
 - Sustainability extension using carbon-price sweeps and cost/emissions tradeoff plots.
 - Safety-stock calculation for open warehouses using a normal newsvendor-style approximation.
+- Three-period facility-location extension with demand growth and warehouse switching costs.
+- Interactive Streamlit dashboard that can re-solve custom demand, capacity, cost, service, and carbon scenarios.
 - Exported CSV results, plots, generated report, optional dashboard, tests, and CI.
 
 ## Repository Structure
@@ -58,6 +60,15 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
+Useful run modes:
+
+```bash
+python main.py --quick
+python main.py --deep
+python main.py --multi-period
+python main.py --solver-msg
+```
+
 Run the tests:
 
 ```bash
@@ -71,6 +82,8 @@ python -m pip install -r requirements-dashboard.txt
 streamlit run dashboard.py
 ```
 
+The dashboard displays generated results and includes a scenario solver with sliders for demand, capacity, fixed cost, service distance, and carbon price.
+
 Generated artifacts:
 
 - `data/`: reproducible synthetic input CSVs.
@@ -83,6 +96,18 @@ Additional docs:
 - `docs/INTERVIEW_GUIDE.md`: concise answers for common project interview questions.
 - `docs/MODEL_ASSUMPTIONS.md`: assumptions, simplifications, and limitations.
 - `docs/RECRUITER_SUMMARY.md`: short resume-oriented project summary.
+
+The default run keeps the core benchmark, robustness, service-level, sustainability, and safety-stock outputs laptop-friendly. Use `--deep` when the slower fixed-cost threshold sweep is needed.
+
+## Advanced Extension
+
+Run the multi-period model:
+
+```bash
+python main.py --multi-period
+```
+
+This solves a three-period version of the facility-location problem with demand growth, warehouse opening switching costs, and warehouse closing switching costs. Outputs are written to `results/multi_period_summary.csv` and `results/multi_period_transitions.csv`.
 
 ## Mathematical Formulation
 
