@@ -100,6 +100,7 @@ Additional docs:
 - `docs/INTERVIEW_GUIDE.md`: concise answers for common project interview questions.
 - `docs/MODEL_ASSUMPTIONS.md`: assumptions, simplifications, and limitations.
 - `docs/RECRUITER_SUMMARY.md`: short resume-oriented project summary.
+- `docs/ATS_SCREENING_PACK.md`: role mapping, ATS keywords, resume bullets, and interview defenses.
 
 The default run keeps the core benchmark, robustness, service-level, sustainability, and safety-stock outputs laptop-friendly. Use `--deep` when the slower fixed-cost threshold sweep is needed.
 
