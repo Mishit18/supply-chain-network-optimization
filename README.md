@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/Mishit18/supply-chain-network-optimization/actions/workflows/tests.yml/badge.svg)](https://github.com/Mishit18/supply-chain-network-optimization/actions/workflows/tests.yml)
 
-Two-stage supply chain network design using a capacitated facility location MILP. The model decides which distribution centers to open and how to route supplier flow through open facilities to demand nodes while minimizing fixed opening cost plus variable transportation cost.
+Two-stage supply chain network design using a capacitated facility location MILP, extended with a grounded RAG decision copilot. The optimizer decides which distribution centers to open and how to route supplier flow through open facilities; the copilot retrieves reports, assumptions, sensitivity tables, and scenario outputs to explain decisions with citations.
 
 ## Results Snapshot
 
@@ -32,6 +32,10 @@ Two-stage supply chain network design using a capacitated facility location MILP
 - Scalable demand-zone aggregation demo for larger customer maps.
 - Node-level Monte Carlo demand uncertainty with warehouse stability metrics.
 - Interactive Streamlit dashboard that can re-solve custom demand, capacity, cost, service, and carbon scenarios.
+- Hybrid RAG decision copilot over reports, model assumptions, CSV outputs, scenario memory, and policy notes using offline word/character retrieval with cited evidence.
+- Scenario memory that logs dashboard what-if runs and makes past decisions retrievable.
+- Executive memo generator for management-style recommendations with cited evidence and implementation risks.
+- Retrieval evaluation benchmark with recall@k reporting for project-specific supply-chain questions.
 - Exported CSV results, plots, generated report, optional dashboard, tests, and CI.
 
 ## Repository Structure
@@ -45,6 +49,7 @@ Two-stage supply chain network design using a capacitated facility location MILP
 |-- main.py                # End-to-end pipeline runner
 |-- model.py               # PuLP MILP formulation and solution extraction
 |-- report.py              # Generates PROJECT_REPORT.md and GitHub chart assets
+|-- rag_copilot.py         # Grounded RAG retrieval and decision-answer synthesis
 |-- sensitivity.py         # Robustness and extension experiments
 |-- validation.py          # Input validation checks
 |-- visualize.py           # Network and tradeoff plots
@@ -86,7 +91,21 @@ python -m pip install -r requirements-dashboard.txt
 streamlit run dashboard.py
 ```
 
-The dashboard displays generated results and includes a scenario solver with sliders for demand, capacity, fixed cost, service distance, and carbon price.
+The dashboard displays generated results, includes a scenario solver with sliders for demand, capacity, fixed cost, service distance, and carbon price, and adds a RAG Decision Copilot for grounded questions such as:
+
+- Why were W01, W05, W06, and W08 robust under demand shocks?
+- What changes when service radius is tightened?
+- How should management interpret cost versus emissions tradeoffs?
+- Which assumptions drive rollout risk?
+
+Command-line copilot:
+
+```bash
+python rag_copilot.py "Why did the optimizer select the current warehouse network?"
+python rag_copilot.py "Explain the cost versus service-level tradeoff"
+python rag_copilot.py --memo "Recommend the supply-chain network decision to executives"
+python rag_copilot.py --evaluate
+```
 
 Generated artifacts:
 
@@ -94,6 +113,7 @@ Generated artifacts:
 - `results/`: optimal solution, baseline comparisons, sensitivity tables, duals, and resume metrics.
 - `plots/`: network map, cost breakdown, tornado chart, service tradeoff, and emissions Pareto sweep.
 - `PROJECT_REPORT.md`: portfolio-style report with tables, charts, interpretation, and resume bullets.
+- RAG copilot citations: retrieved evidence from `PROJECT_REPORT.md`, `docs/`, `results/*.csv`, `results/scenario_runs.csv`, and `results/resume_metrics.json`.
 
 Additional docs:
 
@@ -218,3 +238,5 @@ For networks with thousands of demand nodes, practical options include:
 - Reduced total logistics cost by 20.60% versus greedy nearest-warehouse assignment and 19.00% versus an open-all baseline across 50 demand nodes.
 - Sensitivity-tested the network under +/-20%, +/-30%, and +/-50% demand shocks; identified 4 robust warehouse locations and 2 marginal locations.
 - Added max-distance service-level constraints and quantified cost-of-service tradeoffs across 2 feasible thresholds.
+- Built a hybrid RAG decision copilot over MILP reports, model assumptions, sensitivity tables, scenario memory, and policy notes to explain warehouse selection, cost-service tradeoffs, emissions constraints, and rollout risks with citations.
+- Added retrieval benchmark and executive memo generator, turning MILP outputs into audited management recommendations for supply-chain stakeholders.

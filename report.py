@@ -193,12 +193,20 @@ When warehouse capacity is tightened by 20%, the model re-optimizes the facility
 
 {_markdown_table(capacity_view, ["scenario", "status", "total_cost", "cost_increase_pct", "opened_warehouses"])}
 
+## RAG Decision Intelligence Copilot
+
+The project includes a grounded RAG decision copilot in `rag_copilot.py`. It retrieves evidence from `PROJECT_REPORT.md`, `docs/`, `results/*.csv`, `results/scenario_runs.csv`, and `results/resume_metrics.json`, then synthesizes cited explanations for decision questions such as why a warehouse set was selected, what service-level tightening changes, and how to frame cost-versus-emissions tradeoffs.
+
+The optimizer remains the source of truth for costs and warehouse decisions. The RAG layer is an evidence and communication layer: it turns model outputs, assumptions, sensitivity tables, policy notes, and scenario rows into executive explanations with citations. The project also includes scenario memory, an executive memo generator, and a retrieval evaluation benchmark for recall@k checks.
+
 ## Resume Bullets
 
 - Formulated a {metrics["nodes"]}-node two-stage capacitated facility location MILP with {metrics["binary_variables"]} binary open/close decisions and {metrics["continuous_flow_variables"]} continuous flow variables in PuLP.
 - Reduced total logistics cost by {_pct(metrics["cost_reduction_vs_greedy_pct"])} versus greedy nearest-warehouse assignment and {_pct(metrics["cost_reduction_vs_open_all_pct"])} versus an open-all baseline across {metrics["demand_nodes"]} demand nodes.
 - Sensitivity-tested the network under +/-20%, +/-30%, and +/-50% demand shocks; identified {metrics["robust_warehouse_count"]} robust warehouse locations and {metrics["marginal_warehouse_count"]} marginal locations.
 - Added service-level constraints and quantified max-distance cost tradeoffs across {len(service_tradeoff)} feasible distance thresholds.
+- Built a hybrid RAG decision copilot over MILP reports, model assumptions, sensitivity tables, scenario memory, and policy notes to explain warehouse selection, cost-service tradeoffs, emissions constraints, and rollout risks with citations.
+- Added retrieval benchmark and executive memo generator, turning MILP outputs into audited management recommendations for supply-chain stakeholders.
 
 ## Interview Talking Points
 
@@ -207,6 +215,7 @@ When warehouse capacity is tightened by 20%, the model re-optimizes the facility
 - CBC solves the MILP by repeatedly solving LP relaxations inside a branch-and-bound search tree.
 - LP relaxations often return fractional warehouse openings because the fixed-charge structure breaks the total unimodularity seen in pure transportation problems.
 - For larger networks, practical scaling options include demand aggregation, candidate warehouse pruning, Benders decomposition, Lagrangian relaxation, and warm-start heuristics.
+- The RAG layer should be described as a grounded explanation layer, not as the optimizer. It retrieves project evidence, logs scenario memory, benchmarks retrieval quality, and makes recommendations auditable for business stakeholders.
 """
 
     report_path = config.BASE_DIR / "PROJECT_REPORT.md"

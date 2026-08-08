@@ -1,0 +1,8 @@
+question,expected_sources
+Which warehouses are robust under demand shocks?,results\resume_metrics.json;PROJECT_REPORT.md
+What is the cost reduction versus greedy nearest warehouse?,results\baseline_comparison.csv;PROJECT_REPORT.md
+How does service distance affect network cost?,results\service_level.csv;PROJECT_REPORT.md
+What does the carbon price sweep tell management?,PROJECT_REPORT.md;docs\SERVICE_CARBON_POLICY.md
+What are the main implementation risks before rollout?,docs\MODEL_ASSUMPTIONS.md;docs\SUPPLIER_SLA_POLICY.md
+Why is this a MILP rather than a transportation LP?,docs\INTERVIEW_GUIDE.md;README.md
+How should we explain a solved scenario to executives?,results\scenario_runs.csv;PROJECT_REPORT.md

@@ -12,6 +12,13 @@ except ImportError as exc:
 import config
 from data_generation import load_data
 from model import solve_network
+from rag_copilot import (
+    SCENARIO_MEMORY_PATH,
+    answer_question,
+    explain_scenario,
+    generate_executive_memo,
+    record_scenario_run,
+)
 
 
 st.set_page_config(page_title="Supply Chain Network Optimization", layout="wide")
@@ -146,3 +153,63 @@ if st.button("Solve Scenario", type="primary"):
         scen_cols[2].metric("Variables", scenario_result.variable_count)
         scen_cols[3].metric("Constraints", scenario_result.constraint_count)
         st.write("Opened warehouses:", ", ".join(scenario_result.opened_warehouses))
+        explanation = explain_scenario(
+            scenario_result.opened_warehouses,
+            scenario_result.objective,
+            {
+                "demand_multiplier": demand_multiplier,
+                "capacity_multiplier": capacity_multiplier,
+                "fixed_cost_multiplier": fixed_cost_multiplier,
+                "service_limit": service_limit,
+                "carbon_price": carbon_price,
+                "status": scenario_result.status,
+            },
+        )
+        memory_path = record_scenario_run(
+            scenario_result.opened_warehouses,
+            scenario_result.objective,
+            {
+                "demand_multiplier": demand_multiplier,
+                "capacity_multiplier": capacity_multiplier,
+                "fixed_cost_multiplier": fixed_cost_multiplier,
+                "service_limit": service_limit,
+                "carbon_price": carbon_price,
+                "status": scenario_result.status,
+            },
+            explanation,
+        )
+        with st.expander("RAG Decision Copilot Explanation", expanded=True):
+            st.write(explanation["answer"])
+            st.caption(f"Grounding confidence: {explanation['confidence']}")
+            st.write("Retrieved evidence")
+            st.dataframe(pd.DataFrame(explanation["citations"]), use_container_width=True, hide_index=True)
+            st.caption(f"Scenario saved to {memory_path}")
+
+if SCENARIO_MEMORY_PATH.exists():
+    with st.expander("Scenario Memory"):
+        st.dataframe(pd.read_csv(SCENARIO_MEMORY_PATH).tail(20), use_container_width=True, hide_index=True)
+
+st.divider()
+st.subheader("RAG Decision Copilot")
+st.caption("Ask grounded questions over reports, assumptions, sensitivity tables, and optimizer outputs.")
+default_question = "Why were the selected warehouses robust under demand shocks?"
+question = st.text_input("Question", value=default_question)
+ask_col, memo_col = st.columns([1, 1])
+if ask_col.button("Ask Copilot"):
+    with st.spinner("Retrieving project evidence..."):
+        response = answer_question(question)
+    st.write(response["answer"])
+    st.caption(f"Grounding confidence: {response['confidence']}")
+    st.write("Retrieved evidence")
+    st.dataframe(pd.DataFrame(response["citations"]), use_container_width=True, hide_index=True)
+
+if memo_col.button("Generate Executive Memo"):
+    with st.spinner("Building cited executive memo..."):
+        memo_response = generate_executive_memo(question)
+    st.markdown(memo_response["memo"])
+    st.download_button(
+        "Download memo",
+        data=memo_response["memo"],
+        file_name="supply_chain_rag_decision_memo.md",
+        mime="text/markdown",
+    )
