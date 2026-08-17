@@ -1,0 +1,17 @@
+{
+  "source": "USAID Supply Chain Shipment Pricing Dataset",
+  "dataset_records": 10324,
+  "countries": 43,
+  "vendors": 73,
+  "shipment_modes": 4,
+  "dated_shipments": 10324,
+  "on_time_delivery_rate": 0.88512,
+  "delivery_delay_p50_days": 0.0,
+  "delivery_delay_p90_days": 3.0,
+  "vendor_lead_time_p50_days": 111.0,
+  "vendor_lead_time_p90_days": 282.0,
+  "freight_per_kg_p50_usd": 7.2639,
+  "freight_per_kg_p90_usd": 31.5028,
+  "freight_to_item_value_p50": 0.10203,
+  "quantity_p90": 53267.0
+}

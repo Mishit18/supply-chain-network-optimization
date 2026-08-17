@@ -22,6 +22,7 @@ Two-stage supply chain network design using a capacitated facility location MILP
 ## What This Project Covers
 
 - Synthetic but realistic supply chain data generation with reproducible random seeds.
+- Separate real-data calibration on 10,324 public USAID shipment records, with lead-time, freight, mode, country, and on-time-delivery benchmarks.
 - Capacitated facility location and transportation formulation in PuLP.
 - CBC solver workflow with optional Gurobi hook.
 - Benchmarking against greedy nearest-warehouse, open-all, and k-means baselines.
@@ -76,6 +77,7 @@ python main.py --multi-period
 python main.py --scale-demo
 python main.py --monte-carlo
 python main.py --solver-msg
+python real_data_validation.py
 ```
 
 Run the tests:
@@ -121,6 +123,7 @@ Additional docs:
 - `docs/MODEL_ASSUMPTIONS.md`: assumptions, simplifications, and limitations.
 - `docs/RECRUITER_SUMMARY.md`: short resume-oriented project summary.
 - `docs/ATS_SCREENING_PACK.md`: role mapping, ATS keywords, resume bullets, and interview defenses.
+- `docs/REAL_DATA_VALIDATION.md`: real shipment-data provenance, quality controls, and empirical scenario priors.
 
 The default run keeps the core benchmark, robustness, service-level, sustainability, and safety-stock outputs laptop-friendly. Use `--deep` when the slower fixed-cost threshold sweep is needed.
 
